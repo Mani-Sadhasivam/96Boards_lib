@@ -59,10 +59,9 @@ int gpio_setup(void)
 
 	while(fgets(board, 1024, ret) != NULL);
 	if (!strcmp(board, hikey)) {
-		printf("HiKey found\n");
 		gpio_idx = HIKEY;
 	} else if (!strcmp(board, dboard)) {
-		
+		gpio_idx = DRAGONBOARD;
 	}
 
 	fclose(ret);	
