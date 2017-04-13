@@ -49,7 +49,7 @@ int gpio_setup(void)
 	FILE *ret;
 	char board[1024];
 	char *hikey = "HiKey Development Board";
-	char *dboard = "DragonBoard Development Board";
+	char *dboard = "Qualcomm Technologies, Inc. APQ 8016 SBC";
 	
 	ret = fopen("/proc/device-tree/model", "r");
 	if (ret == NULL) {
