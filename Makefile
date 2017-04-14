@@ -1,16 +1,31 @@
 
-OUT_FILE := bin
-SOURCE := $(PWD)/src/*.c
-INCLUDE := $(PWD)/include
+CC := gcc
+CC_FLAGS := -Wall -g3 -I./include -pthread 
+INST_PATH:= /usr/local
 
-OUT_FILE: main.o 96boards_gpio.o
-	gcc -pthread main.o 96boards_gpio.o -o ${OUT_FILE}
+all: dirs lib96gpio
 
-main.o: main.c
-	gcc -Wall -g3 -I${INCLUDE} -c main.c
+dirs:
+	@mkdir -p bin lib obj
 
-96boards_gpio.o: src/96boards_gpio.c
-	gcc -Wall -g3 -I${INCLUDE} -c src/96boards_gpio.c
+obj/%.o: src/%.c
+	@echo "Compiling $<"
+	@$(CC) $(CC_FLAGS) -o "$@" -c "$<"
+
+lib96gpio: obj/lib96gpio.o
+	@ar rcs lib/lib96gpio.a $^
 
 clean:
-	rm -rf ./*.o ${OUT_FILE}
+	@rm -rf obj/* bin/* lib/*
+
+install: glem
+	@mkdir -p ${INST_PATH}/include
+	@mkdir -p ${INST_PATH}/lib
+	@cp include/* ${INST_PATH}/include
+	@cp lib/* ${INST_PATH}/lib
+
+uninstall:
+	@rm -rf ${INST_PATH}/lib/lib96gpio.a
+	@rm -rf ${INST_PATH}/include/96gpio.h
+
+.PHONY: clean 96gpio dirs all install uninstall

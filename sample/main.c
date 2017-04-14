@@ -1,6 +1,6 @@
-#include "96boards_gpio.h"
 #include <stdio.h>
 #include <unistd.h>
+#include <96gpio.h>
 
 void my_func(int num)
 {
@@ -9,20 +9,17 @@ void my_func(int num)
 
 int main(void)
 {
-	/* Setup GPIO for the board */
-	gpio_setup();
-
 	/* Configure GPIO as output */
-	gpio_mode(23, OUT);
+	gpio_set_mode(23, GPIO_OUT);
 
 	/* Configure GPIO as input */
-	gpio_mode(25, IN);
+	gpio_set_mode(25, GPIO_IN);
 
 	/* Output high */
-	gpio_output(23, HIGH);
+	gpio_write(23, HIGH);
 
 	/* Wait for GPIO to change state */
-        gpio_add_event_detect(25, RISING, my_func, 12);
+        gpio_add_event_detect(25, EDGE_RISING, my_func, 12);
 	sleep(10);
 
 	return 0;
