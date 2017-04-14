@@ -1,10 +1,15 @@
 #include <stdio.h>
 #include <unistd.h>
+
 #include <96gpio.h>
 
-void my_func(int num)
+void my_func(void *data)
 {
-	printf("Thread: %d\n", num);
+	int *num = (int *)data;
+	if (num)
+		printf("Thread: %d\n", *num);
+	else
+		printf("Thread: null\n");
 }
 
 int main(void)
@@ -19,7 +24,8 @@ int main(void)
 	gpio_write(23, HIGH);
 
 	/* Wait for GPIO to change state */
-        gpio_add_event_detect(25, EDGE_RISING, my_func, 12);
+	int num = 12;
+	gpio_register_event_cb(25, EDGE_RISING, my_func, (void *)&num);
 	sleep(10);
 
 	return 0;

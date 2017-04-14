@@ -171,7 +171,7 @@ int gpio_set_mode(int gpio, enum gpio_dir dir)
 	return 0;
 }
 
-int gpio_wirte(int gpio, int val)
+int gpio_write(int gpio, int val)
 {
 	int fd, soc_num;
 	char buffer[BUFF_MAX];

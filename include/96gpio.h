@@ -36,5 +36,6 @@ int gpio_write(int gpio, int val);
 int gpio_read(int gpio);
 int gpio_set_edge(int gpio, enum gpio_edge edge);
 int gpio_wait_for_edge(int gpio, enum gpio_edge edge, unsigned long timeout_ms);
+int gpio_register_event_cb(int, enum gpio_edge, void (*handler)(void *), void *);
 
 #endif

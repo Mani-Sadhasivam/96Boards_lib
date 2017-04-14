@@ -6,7 +6,7 @@ INST_PATH:= /usr/local
 all: dirs lib96gpio
 
 dirs:
-	@mkdir -p bin lib obj
+	@mkdir -p lib obj
 
 obj/%.o: src/%.c
 	@echo "Compiling $<"
