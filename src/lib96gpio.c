@@ -6,7 +6,7 @@
 #include <poll.h>
 #include <pthread.h>
 
-#include <96gpio.h>
+#include <lib96gpio.h>
 
 /*
  * During development, it helps to be able to switch all file
@@ -24,21 +24,16 @@
 
 #define BUFF_MAX 64
 
-#define PIN_MAP_DEF(n, m) const int PIN_MAP##n[] = {m};
+#define PIN_MAP_DEF(n, m) const int PIN_MAP##n[] = {m}
 #define PIN_MAP(n) PIN_MAP##n
 
-/* 96boards_hikey */
-#define HIKEY_PIN_START  23
-#define HIKEY_PIN_END    34
+#define LS_PIN_START  23
+#define LS_PIN_END    34
 #define HIKEY_PIN_MAP  488, 489, 490, 491, 492, 415, 463, 495, 426, 433, 427, 434
-
-/* 96boards_dragon */
-#define DRAGON_PIN_START 23
-#define DRAGON_PIN_END   34
 #define DRAGON_PIN_MAP  36,  12,  13,  69, 115, 507,  24,  25,  35,  34,  28,  33
 
-PIN_MAP_DEF(DRAGON, DRAGON_PIN_MAP)
-PIN_MAP_DEF(HIKEY,  HIKEY_PIN_MAP)
+PIN_MAP_DEF(DRAGON, DRAGON_PIN_MAP);
+PIN_MAP_DEF(HIKEY,  HIKEY_PIN_MAP);
 
 /* Globals */
 int g_board = -1;
@@ -54,7 +49,7 @@ typedef struct {
 	 * boards based on some environment variable. */
 	const char *name;
 	/* Board model as found in /proc/device-tree/model */
-	const char *desc;
+	const char *model;
 	/* User GPIO pin number to SOC pin number translation  */
 	const int pin_start;
 	const int pin_end;
@@ -63,19 +58,19 @@ typedef struct {
 
 board_spec_t board_spec[BRD_SENTINEL] = {
 
-	[BRD_HIKEY] =  { 
+	[BRD_HIKEY] =  {
 		.name      = "96boards_hikey",
-		.desc      = "HiKey Development Board",
-		.pin_start = HIKEY_PIN_START,
-		.pin_end   = HIKEY_PIN_END,
+		.model      = "HiKey Development Board",
+		.pin_start = LS_PIN_START,
+		.pin_end   = LS_PIN_END,
 		.pin_map   = PIN_MAP(HIKEY),
 	},
 
 	[BRD_DRAGON] = {
 		.name      = "96boards_dragon",
-		.desc      = "Qualcomm Technologies, Inc. APQ 8016 SBC",
-		.pin_start = DRAGON_PIN_START,
-		.pin_end   = DRAGON_PIN_END,
+		.model      = "Qualcomm Technologies, Inc. APQ 8016 SBC",
+		.pin_start = LS_PIN_START,
+		.pin_end   = LS_PIN_END,
 		.pin_map   = PIN_MAP(DRAGON),
 	},
 };
@@ -97,7 +92,7 @@ static int board_detect()
 	do {
 		fgets(tmp_buf, 1024, ret);
 		for (i=0; i<BRD_SENTINEL; i++) {
-			if (strcmp(tmp_buf, board_spec[i].desc) == 0) {
+			if (strcmp(tmp_buf, board_spec[i].model) == 0) {
 				brd = i;
 				break;
 			}
@@ -107,10 +102,11 @@ static int board_detect()
 					"in env BOARD\n");
 			break;
 		}
+		g_board = brd;
 		ret_val =0;
 	} while(0);
 
-	fclose(ret);	
+	fclose(ret);
 
 	return ret_val;
 }
@@ -216,43 +212,48 @@ int gpio_read(int gpio)
 	read(open_fd, &val, 1);
 	close(open_fd);
 
-	return val;	
+	if (val < '0' || val > '1')
+		return -1;
+
+	return ('0' - val);
 }
 
 int gpio_set_edge(int gpio, enum gpio_edge edge)
 {
-	int open_fd;
+	int fd, soc_num;
 	char buffer[BUFF_MAX];
 
-	int soc_num = get_soc_num(gpio);
+	soc_num = get_soc_num(gpio);
 	if (soc_num < 0)
 		return soc_num;
 
 	snprintf(buffer, sizeof(buffer),
 		"%s/sys/class/gpio/gpio%d/edge", FOLDER_PREFIX, soc_num);
-	open_fd = open(buffer, O_WRONLY);
-	if (open_fd < 0) {
+	fd = open(buffer, O_WRONLY);
+	if (fd < 0) {
 		perror("Failed to open GPIO value");
 		return -1;
 	}
 
 	switch (edge) {
+	case EDGE_NONE:
+		write(fd, "none", 8);
+		break;
 	case EDGE_RISING:
-		write(open_fd, "rising", 8);
+		write(fd, "rising", 8);
 		break;
 	case EDGE_FALLING:
-		write(open_fd, "falling", 8);
+		write(fd, "falling", 8);
 		break;
 	case EDGE_BOTH:
-		write(open_fd, "both", 8);
+		write(fd, "both", 8);
 		break;
 	default:
-	/* Default to something friendly */
-	case EDGE_NONE:
-		write(open_fd, "none", 8);
+		return -EUNKNOWN_EDGE;
+
 	}
 
-	close(open_fd);
+	close(fd);
 
 	return 0;
 }

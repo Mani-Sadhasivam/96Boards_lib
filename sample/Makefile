@@ -1,15 +1,17 @@
 
 CC := gcc
-CC_FLAGS := -Wall -I../include -L../lib
+CFLAGS := -Wall
 
 all: sample
 
 %.o:%.c
 	@echo "Compiling $<"
-	$(CC) $(CC_FLAGS) -o "$@" -c "$<"
+	@$(CC) $(CFLAGS) -o "$@" -c "$<"
 
 sample: main.o
-	$(CC) $(CC_FLAGS) $^ -l96gpio -o $@
+	@$(CC) $(CFLAGS) $^ -l96gpio -o $@
 
 clean:
 	@rm -f sample *.o
+
+.PHONY: clean sample all

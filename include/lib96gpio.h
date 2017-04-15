@@ -28,6 +28,7 @@ enum gpio_errors {
 	EUNKNOWN,
 	EBOARD_NOT_FOUND,
 	EPIN_NOT_FOUND,
+	EUNKNOWN_EDGE,
 	ESENTINEL
 };
 
