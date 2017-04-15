@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "lib96gpio.h"
+#include <lib96gpio.h>
 
 void my_func(void *data)
 {
