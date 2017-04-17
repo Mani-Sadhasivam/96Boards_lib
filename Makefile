@@ -1,7 +1,7 @@
 
 CC := gcc
-CFLAGS := -Wall -g3 -I./include -pthread
-INST_PATH:= /usr
+CFLAGS := -Wall -g3 -I./include
+INST_PATH := /usr
 
 all: dirs lib96gpio
 
@@ -10,7 +10,7 @@ dirs:
 
 obj/%.o: src/%.c
 	@echo "Compiling $<"
-	@$(CC) $(CFLAGS) -o "$@" -c "$<"
+	@$(CC) $(CFLAGS) -o $@ -c $<
 
 lib96gpio: obj/lib96gpio.o
 	@ar rcs lib/lib96gpio.a $^

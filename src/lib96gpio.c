@@ -14,7 +14,6 @@
  *
  * Remove in production.
  */
-#define DEBUG
 
 #ifdef DEBUG
 #define FOLDER_PREFIX "/tmp"
@@ -36,7 +35,7 @@ PIN_MAP_DEF(DRAGON, DRAGON_PIN_MAP);
 PIN_MAP_DEF(HIKEY,  HIKEY_PIN_MAP);
 
 /* Globals */
-int g_board = -1;
+int board_idx = -1;
 
 struct gpio_callback {
 	int soc_num;
@@ -102,7 +101,7 @@ static int board_detect()
 					"in env BOARD\n");
 			break;
 		}
-		g_board = brd;
+		board_idx = brd;
 		ret_val =0;
 	} while(0);
 
@@ -113,10 +112,10 @@ static int board_detect()
 
 static int get_soc_num(int gpio)
 {
-	if (g_board == -1 && board_detect() != 0)
+	if (board_idx == -1 && board_detect() != 0)
 		return -EBOARD_NOT_FOUND;
 
-	board_spec_t *brd = &board_spec[g_board];
+	board_spec_t *brd = &board_spec[board_idx];
 
 	if (brd == NULL) {
 		return -EBOARD_NOT_FOUND;
@@ -215,17 +214,13 @@ int gpio_read(int gpio)
 	if (val < '0' || val > '1')
 		return -1;
 
-	return ('0' - val);
+	return (val - '0');
 }
 
-int gpio_set_edge(int gpio, enum gpio_edge edge)
+int gpio_set_edge(int soc_num, enum gpio_edge edge)
 {
-	int fd, soc_num;
+	int fd;
 	char buffer[BUFF_MAX];
-
-	soc_num = get_soc_num(gpio);
-	if (soc_num < 0)
-		return soc_num;
 
 	snprintf(buffer, sizeof(buffer),
 		"%s/sys/class/gpio/gpio%d/edge", FOLDER_PREFIX, soc_num);
@@ -249,6 +244,7 @@ int gpio_set_edge(int gpio, enum gpio_edge edge)
 		write(fd, "both", 8);
 		break;
 	default:
+		perror("Unknown edge\n");
 		return -EUNKNOWN_EDGE;
 
 	}
@@ -327,13 +323,13 @@ int gpio_register_event_cb(int gpio, enum gpio_edge edge,
 	int ret, soc_num;
 	pthread_t thread_id;
 
-        soc_num = get_soc_num(gpio);
-        if (soc_num < 0)
-                return soc_num;
+	soc_num = get_soc_num(gpio);
+ 	if (soc_num < 0)
+		return soc_num;
 
-        ret = gpio_set_edge(soc_num, edge);
-        if (ret < 0)
-                return ret;
+	ret = gpio_set_edge(soc_num, edge);
+	if (ret < 0)
+		return ret;
 
 	struct gpio_callback *cb = malloc(sizeof(struct gpio_callback));
 	if (cb == NULL) {
@@ -348,6 +344,7 @@ int gpio_register_event_cb(int gpio, enum gpio_edge edge,
 		gpio_interrupt_routine, (void *)cb);
 	if (ret) {
 		perror("Error while creating interrupt thread\n");
+		free(cb);
 		return -1;
 	}
 

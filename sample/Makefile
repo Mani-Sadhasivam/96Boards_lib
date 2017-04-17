@@ -1,12 +1,12 @@
 
 CC := gcc
-CFLAGS := -Wall
+CFLAGS := -Wall -pthread
 
 all: sample
 
 %.o:%.c
 	@echo "Compiling $<"
-	@$(CC) $(CFLAGS) -o "$@" -c "$<"
+	@$(CC) $(CFLAGS) -o $@ -c $<
 
 sample: main.o
 	@$(CC) $(CFLAGS) $^ -l96gpio -o $@
