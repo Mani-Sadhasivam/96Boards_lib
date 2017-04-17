@@ -22,6 +22,8 @@ int gpio_table[2][12][2] = {
         {{23, 488}, {24, 489}, {25, 490}, {26, 491}, {27, 492}, {28, 415}, {29, 463}, {30, 495}, {31, 426}, {32, 433}, {33, 427}, {34, 434}},
         /* DragonBoard */
         {{23, 36}, {24, 12}, {25, 13}, {26, 69}, {27, 115}, {28, 507}, {29, 24}, {30, 25}, {31, 35}, {32, 34}, {33, 28}, {34, 33}},
+        /* Bubblegum-96 */
+        {{23, 0}, {24, 1}, {25, 2}, {26, 3}, {27, 4}, {28, 5}, {29, 6}, {30, 7}, {31, 8}, {32, 9}, {33, 155}, {34, 154}},
 };
 
 int get_soc_num(int gpio)
@@ -50,6 +52,7 @@ int gpio_setup(void)
 	char board[1024];
 	char *hikey = "HiKey Development Board";
 	char *dboard = "Qualcomm Technologies, Inc. APQ 8016 SBC";
+	char *bubblegum = "s900";
 	
 	ret = fopen("/proc/device-tree/model", "r");
 	if (ret == NULL) {
@@ -62,6 +65,8 @@ int gpio_setup(void)
 		gpio_idx = HIKEY;
 	} else if (!strcmp(board, dboard)) {
 		gpio_idx = DRAGONBOARD;
+	} else if (!strcmp(board, bubblegum)) {
+		gpio_idx = BUBBLEGUM;
 	}
 
 	fclose(ret);	
