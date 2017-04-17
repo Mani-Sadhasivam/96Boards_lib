@@ -107,8 +107,7 @@ static int board_detect()
 			}
 		}
 		if (brd < 0 || brd > BRD_SENTINEL) {
-			fprintf(stderr, "96board: invalid board specified "
-					"in env BOARD\n");
+			perror("Invalid board specified in source\n");
 			break;
 		}
 		board_idx = brd;
@@ -128,11 +127,14 @@ static int get_soc_num(int gpio)
 	board_spec_t *brd = &board_spec[board_idx];
 
 	if (brd == NULL) {
+		perror("Board specific structure not found\n");
 		return -EBOARD_NOT_FOUND;
 	}
 
-	if (gpio < brd->pin_start || gpio > brd->pin_end)
+	if (gpio < brd->pin_start || gpio > brd->pin_end) {
+		fprintf(stderr, "Invalid GPIO pin specified: %d\n", gpio);
 		return -EPIN_NOT_FOUND;
+	}
 
 	gpio -= brd->pin_start;
 
@@ -153,7 +155,7 @@ int gpio_set_mode(int gpio, enum gpio_dir dir)
 		"%s/sys/class/gpio/export", FOLDER_PREFIX);
 	fd = open(buffer, O_WRONLY);
 	if (fd < 0) {
-		perror("Failed to export GPIO\n");
+		fprintf(stderr, "Failed to export GPIO: %d\n", gpio);
 		return -1;
 	}
 
@@ -166,7 +168,7 @@ int gpio_set_mode(int gpio, enum gpio_dir dir)
 		"%s/sys/class/gpio/gpio%d/direction", FOLDER_PREFIX, soc_num);
 	fd = open(buffer, O_WRONLY);
 	if (fd < 0) {
-		perror("Failed to open GPIO direction");
+		fprintf(stderr, "Failed to open direction for GPIO: %d\n", gpio);
 		return -1;
 	}
 
@@ -174,6 +176,26 @@ int gpio_set_mode(int gpio, enum gpio_dir dir)
 	close(fd);
 
 	return 0;
+}
+
+int gpio_get_mode(int soc_num)
+{
+	int fd;
+	char buffer[BUFF_MAX];
+
+        snprintf(buffer, sizeof(buffer),
+                "%s/sys/class/gpio/gpio%d/direction", FOLDER_PREFIX, soc_num);
+        fd = open(buffer, O_RDONLY);
+        if (fd < 0) {
+                perror("Failed to open direction for GPIO\n");
+                return -1;
+        }
+
+	lseek (fd, 0, SEEK_SET);
+	read(fd, buffer, 5);
+	close(fd);
+
+	return (strncmp(buffer, "in", 2));
 }
 
 int gpio_write(int gpio, int val)
@@ -189,7 +211,7 @@ int gpio_write(int gpio, int val)
 		"%s/sys/class/gpio/gpio%d/value", FOLDER_PREFIX, soc_num);
 	fd = open(buffer, O_WRONLY);
 	if (fd < 0) {
-		perror("Failed to open GPIO value");
+		fprintf(stderr, "Failed to open value for GPIO: %d\n", gpio);
 		return -1;
 	}
 
@@ -202,7 +224,7 @@ int gpio_write(int gpio, int val)
 int gpio_read(int gpio)
 {
 	int soc_num;
-	int open_fd;
+	int fd;
 	char buffer[BUFF_MAX];
 	char val;
 
@@ -212,14 +234,14 @@ int gpio_read(int gpio)
 
 	snprintf(buffer, sizeof(buffer),
 		"%s/sys/class/gpio/gpio%d/value", FOLDER_PREFIX, soc_num);
-	open_fd = open(buffer, O_RDWR);
-	if (open_fd < 0) {
-		perror("Failed to open GPIO value");
+	fd = open(buffer, O_RDWR);
+	if (fd < 0) {
+		fprintf(stderr, "Failed to open value for GPIO: %d\n", gpio);
 		return -1;
 	}
 
-	read(open_fd, &val, 1);
-	close(open_fd);
+	read(fd, &val, 1);
+	close(fd);
 
 	if (val < '0' || val > '1')
 		return -1;
@@ -229,14 +251,20 @@ int gpio_read(int gpio)
 
 int gpio_set_edge(int soc_num, enum gpio_edge edge)
 {
-	int fd;
+	int fd, ret;
 	char buffer[BUFF_MAX];
+
+	ret = gpio_get_mode(soc_num);
+	if (ret) {
+		perror("Direction must be IN for setting edge\n");
+		return -1;
+	}
 
 	snprintf(buffer, sizeof(buffer),
 		"%s/sys/class/gpio/gpio%d/edge", FOLDER_PREFIX, soc_num);
 	fd = open(buffer, O_WRONLY);
 	if (fd < 0) {
-		perror("Failed to open GPIO value");
+		perror("Failed to open GPIO edge\n");
 		return -1;
 	}
 
@@ -254,7 +282,7 @@ int gpio_set_edge(int soc_num, enum gpio_edge edge)
 		write(fd, "both", 8);
 		break;
 	default:
-		perror("Unknown edge\n");
+		perror("Unknown edge specified\n");
 		return -EUNKNOWN_EDGE;
 
 	}
@@ -266,24 +294,24 @@ int gpio_set_edge(int soc_num, enum gpio_edge edge)
 
 static int gpio_poll(int soc_num, unsigned long timeout_ms)
 {
-	int open_fd, ret;
+	int fd, ret;
 	char buffer[BUFF_MAX];
 	char ch;
 	struct pollfd pfd;
 
 	snprintf(buffer, sizeof(buffer),
 		"%s/sys/class/gpio/gpio%d/value", FOLDER_PREFIX, soc_num);
-	open_fd = open(buffer, O_RDWR);
-	if (open_fd < 0) {
-		perror("Failed to open GPIO value");
+	fd = open(buffer, O_RDWR);
+	if (fd < 0) {
+		perror("Failed to open GPIO value\n");
 		return -1;
 	}
-	pfd.fd = open_fd;
+	pfd.fd = fd;
 	pfd.events = POLLPRI | POLLERR;
 	pfd.revents = 0;
 
 	/* Dummy read */
-	read(open_fd, &ch, 1);
+	read(fd, &ch, 1);
 
 	/* Wait until timeout */
 	ret = poll(&pfd, 1, timeout_ms);
@@ -293,7 +321,7 @@ static int gpio_poll(int soc_num, unsigned long timeout_ms)
 	}
 	
 	if (ret == 0 || ((pfd.revents & POLLPRI) == 0)) {
-		fprintf(stderr, "96Boards: GPIO read timed out\n");
+		perror("GPIO read timed out\n");
 		return ret;	
 	}
 
@@ -324,6 +352,7 @@ void *gpio_interrupt_routine(void *data)
 		cb->handler(cb->arg);
 	}
 	free(cb);
+
 	return NULL;
 }
 
