@@ -1,0 +1,10 @@
+obj
+bin
+loc
+lib
+tags
+.cproject
+.project
+.settings/
+sample/*.o
+sample/*.exe
