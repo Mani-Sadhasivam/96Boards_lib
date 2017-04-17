@@ -30,9 +30,11 @@
 #define LS_PIN_END    34
 #define HIKEY_PIN_MAP  488, 489, 490, 491, 492, 415, 463, 495, 426, 433, 427, 434
 #define DRAGON_PIN_MAP  36,  12,  13,  69, 115, 507,  24,  25,  35,  34,  28,  33
+#define BUBBLEGUM_PIN_MAP 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 155, 154
 
-PIN_MAP_DEF(DRAGON, DRAGON_PIN_MAP);
 PIN_MAP_DEF(HIKEY,  HIKEY_PIN_MAP);
+PIN_MAP_DEF(DRAGON, DRAGON_PIN_MAP);
+PIN_MAP_DEF(DRAGON, BUBBLEGUM_PIN_MAP);
 
 /* Globals */
 int board_idx = -1;
@@ -71,6 +73,14 @@ board_spec_t board_spec[BRD_SENTINEL] = {
 		.pin_start = LS_PIN_START,
 		.pin_end   = LS_PIN_END,
 		.pin_map   = PIN_MAP(DRAGON),
+	},
+	
+	[BRD_BUBBLEGUM] = {
+		.name      = "96boards_bubblegum",
+		.model      = "s900",
+		.pin_start = LS_PIN_START,
+		.pin_end   = LS_PIN_END,
+		.pin_map   = PIN_MAP(BUBBLEGUM),
 	},
 };
 
