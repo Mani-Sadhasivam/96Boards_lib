@@ -20,6 +20,7 @@ enum gpio_edge {
 enum boards_boards {
 	BRD_HIKEY,
 	BRD_DRAGON,
+	BRD_BUBBLEGUM,
 	BRD_SENTINEL
 };
 
